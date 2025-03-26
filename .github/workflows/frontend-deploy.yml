@@ -29,11 +29,16 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci
+        run: |
+          npm ci
+          echo "Dependencies installed successfully"
 
       - name: Build frontend
         working-directory: frontend
-        run: npm run build
+        run: |
+          echo "Building frontend..."
+          npm run build
+          echo "Build completed successfully"
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
 
@@ -46,5 +51,21 @@ jobs:
 
       - name: Deploy to S3
         run: |
+          echo "Starting S3 deployment..."
+          echo "S3 Bucket: ${{ secrets.AWS_S3_BUCKET }}"
+          
+          # Check if bucket exists
+          if ! aws s3 ls "s3://${{ secrets.AWS_S3_BUCKET }}" 2>&1 > /dev/null; then
+            echo "Error: S3 bucket does not exist or is not accessible"
+            exit 1
+          fi
+          
+          # Sync files to S3
+          echo "Syncing files to S3..."
           aws s3 sync frontend/build/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
-          aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*" 
+          
+          # Invalidate CloudFront cache
+          echo "Invalidating CloudFront cache..."
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+          
+          echo "Deployment completed successfully" 

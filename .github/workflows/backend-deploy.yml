@@ -29,7 +29,9 @@ jobs:
 
       - name: Install dependencies
         working-directory: backend
-        run: npm ci
+        run: |
+          npm ci
+          echo "Dependencies installed successfully"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -41,20 +43,39 @@ jobs:
       - name: Deploy to EC2
         env:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
         run: |
+          # Debug information
+          echo "Starting deployment to EC2..."
+          echo "EC2 Host: $EC2_HOST"
+          
           # Create SSH key file
           echo "$PRIVATE_KEY" > deploy_key
           chmod 600 deploy_key
           
+          # Test SSH connection
+          echo "Testing SSH connection..."
+          ssh -i deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$EC2_HOST 'echo "SSH connection successful"'
+          
+          # Create remote directory if it doesn't exist
+          echo "Creating remote directory..."
+          ssh -i deploy_key -o StrictHostKeyChecking=no ubuntu@$EC2_HOST 'mkdir -p /home/ubuntu/holidayplanner/backend'
+          
           # Copy files to EC2
-          scp -i deploy_key -o StrictHostKeyChecking=no -r backend/* ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/holidayplanner/backend/
+          echo "Copying files to EC2..."
+          scp -i deploy_key -o StrictHostKeyChecking=no -r backend/* ubuntu@$EC2_HOST:/home/ubuntu/holidayplanner/backend/
           
           # Execute deployment commands on EC2
-          ssh -i deploy_key -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} '
+          echo "Running deployment commands..."
+          ssh -i deploy_key -o StrictHostKeyChecking=no ubuntu@$EC2_HOST '
             cd /home/ubuntu/holidayplanner/backend
+            echo "Installing dependencies..."
             npm ci
+            echo "Starting/restarting application..."
             pm2 restart holidayplanner-backend || pm2 start server.js --name holidayplanner-backend
+            echo "Deployment completed"
           '
           
           # Clean up
-          rm deploy_key 
+          rm deploy_key
+          echo "Deployment process completed" 
