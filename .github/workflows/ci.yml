@@ -1,28 +1,134 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
     push:
-        branches:
-            - main
+        branches: [ main, holidayfeatures ]
     pull_request:
-        branches:
-            - main
+        branches: [ main, holidayfeatures ]
 
 jobs:
-    build:
+    test:
         runs-on: ubuntu-latest
 
         steps:
         - name: Checkout code
-            uses: actions/checkout@v2
+            uses: actions/checkout@v3
 
-        - name: Set up Node.js
-            uses: actions/setup-node@v2
+        - name: Setup Node.js
+            uses: actions/setup-node@v3
             with:
-                node-version: '14'
+                node-version: '18'
+                cache: 'npm'
 
-        - name: Install dependencies
-            run: npm install
+        - name: Install backend dependencies
+            working-directory: backend
+            run: |
+                npm ci
+                echo "Backend dependencies installed successfully"
 
-        - name: Run tests
-            run: npm test
+        - name: Run backend tests
+            working-directory: backend
+            run: |
+                echo "Running backend tests..."
+                npm test
+            env:
+                MONGO_URI: ${{ secrets.MONGO_URI }}
+                JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+        - name: Install frontend dependencies
+            working-directory: frontend
+            run: |
+                npm ci
+                echo "Frontend dependencies installed successfully"
+
+        - name: Build frontend
+            working-directory: frontend
+            run: |
+                echo "Building frontend..."
+                npm run build
+            env:
+                REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+
+    deploy-backend:
+        needs: test
+        runs-on: ubuntu-latest
+        if: github.event_name == 'push'
+
+        steps:
+        - name: Checkout code
+            uses: actions/checkout@v3
+
+        - name: Configure AWS credentials
+            uses: aws-actions/configure-aws-credentials@v1
+            with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: ap-southeast-2
+
+        - name: Deploy to EC2
+            env:
+                PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+                EC2_HOST: ${{ secrets.EC2_HOST }}
+            run: |
+                echo "Starting deployment to EC2..."
+                
+                # Create SSH key file
+                echo "$PRIVATE_KEY" > deploy_key
+                chmod 600 deploy_key
+                
+                # Test SSH connection
+                ssh -i deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$EC2_HOST 'echo "SSH connection successful"'
+                
+                # Create remote directory
+                ssh -i deploy_key -o StrictHostKeyChecking=no ubuntu@$EC2_HOST 'mkdir -p /home/ubuntu/holidayplanner/backend'
+                
+                # Copy files to EC2
+                scp -i deploy_key -o StrictHostKeyChecking=no -r backend/* ubuntu@$EC2_HOST:/home/ubuntu/holidayplanner/backend/
+                
+                # Deploy on EC2
+                ssh -i deploy_key -o StrictHostKeyChecking=no ubuntu@$EC2_HOST '
+                    cd /home/ubuntu/holidayplanner/backend
+                    npm ci
+                    pm2 restart holidayplanner-backend || pm2 start server.js --name holidayplanner-backend
+                '
+                
+                rm deploy_key
+
+    deploy-frontend:
+        needs: test
+        runs-on: ubuntu-latest
+        if: github.event_name == 'push'
+
+        steps:
+        - name: Checkout code
+            uses: actions/checkout@v3
+
+        - name: Setup Node.js
+            uses: actions/setup-node@v3
+            with:
+                node-version: '18'
+                cache: 'npm'
+                cache-dependency-path: frontend/package-lock.json
+
+        - name: Install dependencies and build
+            working-directory: frontend
+            run: |
+                npm ci
+                npm run build
+            env:
+                REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+
+        - name: Configure AWS credentials
+            uses: aws-actions/configure-aws-credentials@v1
+            with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: ap-southeast-2
+
+        - name: Deploy to S3 and invalidate CloudFront
+            run: |
+                echo "Deploying to S3..."
+                aws s3 sync frontend/build/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
+                
+                echo "Invalidating CloudFront cache..."
+                aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
