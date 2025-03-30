@@ -4,10 +4,17 @@ A full-stack application for planning and managing holidays, built with Node.js,
 
 ## Project Setup
 
+### Jira Integration
+- Project Board: [Holiday Planner Jira Board](https://yash11844655.atlassian.net/jira/software/projects/HOL/summary?atlOrigin=eyJpIjoiZGVkMTZlN2VlMzk3NDkwM2JjNGYyNzdhOTA5YWEyOGMiLCJwIjoiaiJ9)
+- Issue Tracking: All development tasks are tracked in Jira
+- Sprint Planning: Two-week sprint cycles
+
+  
 ### Prerequisites
 - Node.js (v14 or higher)
 - MongoDB Atlas account
 - Git
+
 
 ### Environment Setup
 1. Clone the repository:
