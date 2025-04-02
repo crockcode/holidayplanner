@@ -5,7 +5,7 @@ import axiosInstance from '../axiosConfig';
 const Profile = () => {
   const { user } = useAuth(); // Access user token from context
   const [formData, setFormData] = useState({
-    name: '',
+    name: '',  
     email: '',
     university: '',
     address: '',

@@ -1,68 +1,249 @@
-# **Assignment: Full-Stack CRUD Application Development with DevOps Practices**
+# Holiday Planner
 
-## **Objective**
+A full-stack application for planning and managing holidays, built with Node.js, Express, and React.
 
-You have been provided with a starter project that includes user authentication using  **Node.js, React.js, and MongoDB**. Your task is to extend this application by implementing **CRUD (Create, Read, Update, Delete) operations** for a real-world application of your choice, while following industry best practices such as:
+## Project Setup
 
-* **Project Management with JIRA**
-* **Requirement Diagram using SysML**
-* **Version Control using GitHub**
-* **CI/CD Integration for Automated Deployment**
+### Jira Integration
+- Project Board: [Holiday Planner Jira Board](https://yash11844655.atlassian.net/jira/software/projects/HOL/summary?atlOrigin=eyJpIjoiZGVkMTZlN2VlMzk3NDkwM2JjNGYyNzdhOTA5YWEyOGMiLCJwIjoiaiJ9)
+- Issue Tracking: All development tasks are tracked in Jira
+- Sprint Planning: Two-week sprint cycles
 
-## **Requirements**
+  
+### Prerequisites
+- Node.js (v14 or higher)
+- MongoDB Atlas account
+- Git
 
-### **1. Choose a Real-World Application**
 
-Select a meaningful use case for your CRUD operations. We will provide the list, you have to select it.
+### Environment Setup
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/crockcode/holidayplanner.git
+   cd holidayplanner
+   ```
 
-### **2. Project Management with JIRA and SysML**
+2. Install dependencies:
+   ```bash
+   # Install backend dependencies
+   cd backend
+   npm install
 
-* Create a **JIRA project** and define:
-  * **Epic**
-  * **User Stories** (features required in your app)
-  * **Child issues & Subtasks** (breaking down development work)
-  * **Sprint Planning** (organizing work into milestones)
-* Document your JIRA **board URL** in the project README.
-* Draw a requirements diagram
+   # Install frontend dependencies
+   cd ../frontend
+   npm install
+   ```
 
-### **3. Backend Development (Node.js + Express + MongoDB)**
+3. Configure environment variables:
+   - Backend (.env):
+     ```
+     MONGO_URI=your_mongodb_connection_string
+     JWT_SECRET=your_jwt_secret
+     PORT=5001
+     ```
+   - Frontend (.env):
+     ```
+     REACT_APP_API_URL=http://localhost:5001
+     ```
 
-* Create a user-friendly interface to interact with your API (Some portion developed, follow task manager app)).
-* Implement **forms** for adding and updating records.
-* Display data using  **tables, cards, or lists (Follow how we showed data in task manager app)**
+4. Start the development servers:
+   ```bash
+   # Start backend server
+   cd backend
+   npm run dev
 
-### **4. Frontend Development (React.js)**
+   # Start frontend server (in a new terminal)
+   cd frontend
+   npm start
+   ```
 
-* Create a user-friendly interface to interact with your API (**Some portion developed, follow task manager app)**.
-* Implement **forms** for adding, showing, deleting and updating records (CRUD).
-* Display data using  **tables, cards, or lists (Follow how we showed data in task manager app)**
+## Project Structure
+```
+holidayplanner/
+├── backend/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── server.js
+│   └── package.json
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── App.js
+│   └── package.json
+└── README.md
+```
 
-### **5. Authentication & Authorization**
+## CI/CD Pipeline
 
-* Ensure **only authenticated users** can access and perform CRUD operations. (Already developed in your project)
-* Use **JWT (JSON Web Tokens)** for user authentication (Use the task manager one from .env file).
+### Continuous Integration (CI)
+We use GitHub Actions for CI. The pipeline runs on every push and pull request:
 
-### **6. GitHub Version Control & Branching Strategy**
+1. **Code Quality Checks**
+   - ESLint for code style
+   - Prettier for code formatting
+   - TypeScript type checking
 
-* Use **GitHub for version control** and maintain:
-  * `main` branch (stable production-ready code)
-  * Feature branches (`feature/xyz`) for each new functionality
-* Follow proper **commit messages** and  **pull request (PR) reviews** .
+2. **Testing**
+   - Unit tests with Jest
+   - Integration tests with Supertest
+   - Coverage reporting
 
-### **7. CI/CD Pipeline Setup**
+3. **Build Verification**
+   - Backend build check
+   - Frontend build check
+   - Dependency audit
 
-* Implement a **CI/CD pipeline using GitHub Actions** to:
-  * Automatically **run tests** on every commit/pull request (Optional).
-  * Deploy the **backend** to **AWS** .
-  * Deploy the **frontend** to **AWS**.
-* Document your  **CI/CD workflow in the README** .
+### Continuous Deployment (CD)
+The CD pipeline is triggered on successful CI and merges to main:
 
-## **Submission Requirements**
+1. **Staging Deployment**
+   - Automatic deployment to staging environment
+   - Integration tests in staging
+   - Performance testing
 
-* **JIRA Project Board URL** (user stories ).
-* **Requirment diagram** (Using project features)
-* **GitHub Repository** (`backend/` and `frontend/`).
-* **README.md** with:
+2. **Production Deployment**
+   - Manual approval required
+   - Blue-green deployment strategy
+   - Automated rollback capability
 
-  * Project setup instructions.
-  * CI/CD pipeline details.
+### Pipeline Stages
+```yaml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install Dependencies
+        run: |
+          cd backend && npm install
+          cd ../frontend && npm install
+      - name: Run Tests
+        run: |
+          cd backend && npm test
+          cd ../frontend && npm test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build Frontend
+        run: cd frontend && npm run build
+      - name: Build Backend
+        run: cd backend && npm run build
+
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Deploy to Staging
+        run: |
+          # Staging deployment steps
+          echo "Deploying to staging..."
+
+  deploy-production:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to Production
+        run: |
+          # Production deployment steps
+          echo "Deploying to production..."
+```
+
+## Development Guidelines
+
+### Code Style
+- Follow ESLint configuration
+- Use Prettier for code formatting
+- Follow TypeScript best practices
+
+### Testing
+- Write unit tests for new features
+- Maintain minimum 80% code coverage
+- Run tests before committing
+
+### Documentation
+- Update README for major changes
+- Document API endpoints
+- Include JSDoc comments for functions
+
+## Deployment Environments
+
+### Staging
+- URL: http://13.236.135.130/
+- Branch: develop
+- Auto-deployment enabled
+
+### Production
+- URL: http://13.236.135.130/
+- Branch: main
+- Manual approval required
+
+## Monitoring and Logging
+
+### Application Monitoring
+- Error tracking with Sentry
+- Performance monitoring with New Relic
+- Custom metrics dashboard
+
+### Logging
+- Structured logging with Winston
+- Log aggregation with ELK Stack
+- Alert system for critical errors
+
+## Security Measures
+
+1. **Authentication**
+   - JWT-based authentication
+   - Password hashing with bcrypt
+   - Rate limiting on auth endpoints
+
+2. **Data Protection**
+   - HTTPS encryption
+   - Input validation
+   - XSS protection
+
+3. **Access Control**
+   - Role-based access control
+   - API key management
+   - IP whitelisting
+
+## Support and Maintenance
+
+### Getting Help
+- Check documentation
+- Contact development team
+- Submit issues on GitHub
+
+### Regular Maintenance
+- Weekly dependency updates
+- Monthly security audits
+- Quarterly performance reviews
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
