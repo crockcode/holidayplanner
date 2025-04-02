@@ -1,0 +1,71 @@
+name: Frontend Deployment
+
+on:
+  push:
+    branches: [ main, holidayfeatures ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-deploy.yml'
+  pull_request:
+    branches: [ main, holidayfeatures ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: |
+          npm ci
+          echo "Dependencies installed successfully"
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          echo "Building frontend..."
+          npm run build
+          echo "Build completed successfully"
+        env:
+          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-2
+
+      - name: Deploy to S3
+        run: |
+          echo "Starting S3 deployment..."
+          echo "S3 Bucket: ${{ secrets.AWS_S3_BUCKET }}"
+          
+          # Check if bucket exists
+          if ! aws s3 ls "s3://${{ secrets.AWS_S3_BUCKET }}" 2>&1 > /dev/null; then
+            echo "Error: S3 bucket does not exist or is not accessible"
+            exit 1
+          fi
+          
+          # Sync files to S3
+          echo "Syncing files to S3..."
+          aws s3 sync frontend/build/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
+          
+          # Invalidate CloudFront cache
+          echo "Invalidating CloudFront cache..."
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+          
+          echo "Deployment completed successfully" 
