@@ -1,3 +1,5 @@
+my name is yash patel
+
 # Holiday Planner
 
 A full-stack application for planning and managing holidays, built with Node.js, Express, and React.
@@ -247,3 +249,6 @@ jobs:
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
+
+
+
