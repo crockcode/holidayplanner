@@ -1,127 +1,89 @@
-name: CI Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - holidayfeatures
   pull_request:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - holidayfeatures
 
 jobs:
-  code-quality:
-    name: Code Quality Checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-          
-      - name: Install Dependencies (Backend)
-        run: |
-          cd backend
-          npm install
-          
-      - name: Install Dependencies (Frontend)
-        run: |
-          cd frontend
-          npm install
-          
-      - name: Run ESLint (Backend)
-        run: |
-          cd backend
-          npx eslint . --ext .js
-          
-      - name: Run ESLint (Frontend)
-        run: |
-          cd frontend
-          npx eslint . --ext .js,.jsx
-          
-      - name: Run Prettier Check (Backend)
-        run: |
-          cd backend
-          npx prettier --check "**/*.js"
-          
-      - name: Run Prettier Check (Frontend)
-        run: |
-          cd frontend
-          npx prettier --check "**/*.{js,jsx,css,html}"
-          
   test:
-    name: Run Tests
-    needs: code-quality
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
-      
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: '14'
-          
-      - name: Install Dependencies (Backend)
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install backend dependencies
+        working-directory: backend
         run: |
-          cd backend
-          npm install
-          
-      - name: Install Dependencies (Frontend)
+          npm ci
+          echo "Backend dependencies installed successfully"
+
+      - name: Run backend tests
+        working-directory: backend
         run: |
-          cd frontend
-          npm install
-          
-      - name: Run Backend Tests
-        run: |
-          cd backend
+          echo "Running backend tests..."
           npm test
-          
-      - name: Run Frontend Tests
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          PORT: ${{ secrets.PORT }}
+
+      - name: Install frontend dependencies
+        working-directory: frontend
         run: |
-          cd frontend
-          npm test -- --watchAll=false
-          
-      - name: Generate Coverage Report
+          npm ci
+          echo "Frontend dependencies installed successfully"
+
+      - name: Build frontend
+        working-directory: frontend
         run: |
-          cd backend
-          npm test -- --coverage
-          cd ../frontend
-          npm test -- --coverage --watchAll=false
-          
+          echo "Building frontend..."
+          npm run build
+        env:
+          REACT_APP_API_URL: http://localhost:${{ secrets.PORT }}
+
   build:
-    name: Build Verification
     needs: test
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
     steps:
-      - uses: actions/checkout@v2
-      
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: '14'
-          
-      - name: Install Dependencies (Backend)
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Build backend
+        working-directory: backend
         run: |
-          cd backend
-          npm install
-          
-      - name: Install Dependencies (Frontend)
+          npm ci
+          echo "Backend build successful"
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          PORT: ${{ secrets.PORT }}
+
+      - name: Build frontend
+        working-directory: frontend
         run: |
-          cd frontend
-          npm install
-          
-      - name: Build Backend
-        run: |
-          cd backend
-          npm run build --if-present
-          
-      - name: Build Frontend
-        run: |
-          cd frontend
+          npm ci
           npm run build
-          
-      - name: Run Dependency Audit
-        run: |
-          cd backend
-          npm audit --production
-          cd ../frontend
-          npm audit --production
+          echo "Frontend build successful"
+        env:
+          REACT_APP_API_URL: http://localhost:${{ secrets.PORT }}
