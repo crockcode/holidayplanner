@@ -22,6 +22,27 @@ jobs:
         with:
           node-version: '14'
           
+      - name: Debug Staging Secrets
+        run: |
+          if [ -z "${{ secrets.STAGING_HOST }}" ]; then
+            echo "::error::STAGING_HOST secret is not set"
+            exit 1
+          else
+            echo "STAGING_HOST secret is set"
+          fi
+          if [ -z "${{ secrets.SSH_USERNAME }}" ]; then
+            echo "::error::SSH_USERNAME secret is not set"
+            exit 1
+          else
+            echo "SSH_USERNAME secret is set"
+          fi
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "::error::SSH_PRIVATE_KEY secret is not set"
+            exit 1
+          else
+            echo "SSH_PRIVATE_KEY secret is set"
+          fi
+          
       - name: Install Dependencies
         run: |
           cd backend
@@ -40,6 +61,7 @@ jobs:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             cd /var/www/holidayplanner
             git pull origin develop
@@ -82,6 +104,27 @@ jobs:
         with:
           node-version: '14'
           
+      - name: Debug Secrets
+        run: |
+          if [ -z "${{ secrets.PRODUCTION_HOST }}" ]; then
+            echo "::error::PRODUCTION_HOST secret is not set"
+            exit 1
+          else
+            echo "PRODUCTION_HOST secret is set"
+          fi
+          if [ -z "${{ secrets.SSH_USERNAME }}" ]; then
+            echo "::error::SSH_USERNAME secret is not set"
+            exit 1
+          else
+            echo "SSH_USERNAME secret is set"
+          fi
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "::error::SSH_PRIVATE_KEY secret is not set"
+            exit 1
+          else
+            echo "SSH_PRIVATE_KEY secret is set"
+          fi
+          
       - name: Install Dependencies
         run: |
           cd backend
@@ -100,6 +143,7 @@ jobs:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             mkdir -p /var/www/holidayplanner-blue
             
@@ -109,6 +153,7 @@ jobs:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             cd /var/www/holidayplanner-blue
             git pull origin main
@@ -124,6 +169,7 @@ jobs:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             cd /var/www
             rm -rf holidayplanner-green
@@ -149,6 +195,7 @@ jobs:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             cd /var/www
             rm -rf holidayplanner-blue
