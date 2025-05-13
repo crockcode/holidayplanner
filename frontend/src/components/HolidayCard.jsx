@@ -12,7 +12,7 @@ const HolidayCard = ({ holiday, onEdit, onDelete, onSubscribe, onClone, onSearch
       </p>
       <p className="mt-3 text-gray-600">{holiday.description}</p>
       
-      {/* Decorator Pattern: Display weather info if available */}
+    {/* Decorator Pattern: Display weather info if available */}
       {holiday.weatherInfo && (
         <div className="mt-3 bg-blue-50 p-2 rounded-md">
           <p className="text-blue-700">
@@ -20,7 +20,6 @@ const HolidayCard = ({ holiday, onEdit, onDelete, onSubscribe, onClone, onSearch
           </p>
         </div>
       )}
-      
       {/* Decorator Pattern: Display budget alert if needed */}
       {holiday.budgetAlert && (
         <div className="mt-3 bg-yellow-50 p-2 rounded-md">
