@@ -1,11 +1,9 @@
-import { useAuth } from '../context/AuthContext';
 import { subscribeToHoliday, cloneHoliday, deleteHoliday } from '../services/holidayService';
 import { useState } from 'react';
 import HolidayCard from './HolidayCard';
 import FlightSearch from './FlightSearch';
 
 const HolidayList = ({ holidays, setHolidays, setEditingHoliday, sortType, setSortType }) => {
-  const { user } = useAuth();
   const [notification, setNotification] = useState(null);
   const [showFlightSearch, setShowFlightSearch] = useState(false);
   const [searchDestination, setSearchDestination] = useState('');
