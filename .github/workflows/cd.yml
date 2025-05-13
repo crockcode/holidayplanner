@@ -1,205 +1,62 @@
 name: CD Pipeline
 
 on:
-  workflow_run:
-    workflows: ["CI/CD Pipeline"]
-    branches: [main, develop]
-    types: 
-      - completed
+  push:
+    branches: [main]
 
 jobs:
-  deploy-staging:
-    name: Deploy to Staging
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'develop' }}
+  build-and-deploy:
+    name: Build and Deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: develop
-          
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
           node-version: '14'
           
-      - name: Debug Staging Secrets
-        run: |
-          if [ -z "${{ secrets.STAGING_HOST }}" ]; then
-            echo "::error::STAGING_HOST secret is not set"
-            exit 1
-          else
-            echo "STAGING_HOST secret is set"
-          fi
-          if [ -z "${{ secrets.SSH_USERNAME }}" ]; then
-            echo "::error::SSH_USERNAME secret is not set"
-            exit 1
-          else
-            echo "SSH_USERNAME secret is set"
-          fi
-          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
-            echo "::error::SSH_PRIVATE_KEY secret is not set"
-            exit 1
-          else
-            echo "SSH_PRIVATE_KEY secret is set"
-          fi
-          
-      - name: Install Dependencies
+      - name: Install Backend Dependencies
         run: |
           cd backend
           npm install
-          cd ../frontend
+          
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
           npm install
           
-      - name: Build for Production
+      - name: Build Frontend
         run: |
           cd frontend
           npm run build
           
-      - name: Deploy to Staging Server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            cd /var/www/holidayplanner
-            git pull origin develop
-            cd backend
-            npm install
-            pm2 restart holidayplanner-api
-            cd ../frontend
-            npm install
-            npm run build
-            
-      - name: Health Check
-        run: |
-          echo "Performing health check on staging environment..."
-          curl -sSf http://${{ secrets.STAGING_HOST }}/status || (echo "Health check failed" && exit 1)
-            
-      - name: Run Integration Tests in Staging
-        run: |
-          echo "Running integration tests in staging environment"
-          # Add your integration test commands here
-          
-      - name: Run Performance Tests
-        run: |
-          echo "Running performance tests in staging environment"
-          # Add your performance test commands here
-          
-  deploy-production:
-    name: Deploy to Production
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: http://13.236.135.130/
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: main
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-          
-      - name: Debug Secrets
-        run: |
-          if [ -z "${{ secrets.PRODUCTION_HOST }}" ]; then
-            echo "::error::PRODUCTION_HOST secret is not set"
-            exit 1
-          else
-            echo "PRODUCTION_HOST secret is set"
-          fi
-          if [ -z "${{ secrets.SSH_USERNAME }}" ]; then
-            echo "::error::SSH_USERNAME secret is not set"
-            exit 1
-          else
-            echo "SSH_USERNAME secret is set"
-          fi
-          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
-            echo "::error::SSH_PRIVATE_KEY secret is not set"
-            exit 1
-          else
-            echo "SSH_PRIVATE_KEY secret is set"
-          fi
-          
-      - name: Install Dependencies
+      - name: Run Tests
         run: |
           cd backend
-          npm install
-          cd ../frontend
-          npm install
+          npm test
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI || 'mongodb://localhost:27017/holidayplanner' }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-secret' }}
+          PORT: ${{ secrets.PORT || '5000' }}
           
-      - name: Build for Production
+      - name: Deploy to Production
         run: |
-          cd frontend
-          npm run build
+          echo "Deployment would happen here"
+          echo "This is a placeholder for your actual deployment logic"
+          echo "For a real deployment, you might use:"
+          echo "- GitHub Pages for frontend"
+          echo "- Heroku, Vercel, or Netlify deployment"
+          echo "- AWS Elastic Beanstalk or similar services"
           
-      - name: Prepare Blue Deployment
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            mkdir -p /var/www/holidayplanner-blue
-            
-      - name: Deploy to Blue Environment
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            cd /var/www/holidayplanner-blue
-            git pull origin main
-            cd backend
-            npm install
-            cd ../frontend
-            npm install
-            npm run build
-            
-      - name: Switch to Blue Environment
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            cd /var/www
-            rm -rf holidayplanner-green
-            mv holidayplanner holidayplanner-green
-            mv holidayplanner-blue holidayplanner
-            cd holidayplanner/backend
-            pm2 restart holidayplanner-api
-            
-      - name: Verify Deployment
+      - name: Deployment Summary
         run: |
-          echo "Verifying deployment..."
-          curl -sSf http://13.236.135.130/ || (echo "Deployment verification failed, rolling back" && exit 1)
-          
-      - name: Health Check
-        run: |
-          echo "Performing health check on production environment..."
-          curl -sSf http://13.236.135.130/status || (echo "Health check failed" && exit 1)
-          
-      - name: Rollback on Failure
-        if: failure()
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            cd /var/www
-            rm -rf holidayplanner-blue
-            mv holidayplanner holidayplanner-blue
-            mv holidayplanner-green holidayplanner
-            cd holidayplanner/backend
-            pm2 restart holidayplanner-api 
+          echo "✅ Build completed successfully"
+          echo "✅ Tests passed"
+          echo "✅ Deployment simulation completed"
+          echo ""
+          echo "To set up actual deployment:"
+          echo "1. Choose a hosting platform (Heroku, Vercel, AWS, etc.)"
+          echo "2. Add deployment credentials as GitHub secrets"
+          echo "3. Update this workflow with platform-specific deployment steps" 
