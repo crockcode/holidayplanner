@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');  // Assuming you have a User model for authentication
 
+// Chain of Responsibility Pattern: Authentication middleware
 const protect = async (req, res, next) => {
   let token;
 
@@ -26,4 +27,35 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+// Chain of Responsibility Pattern: Admin role check middleware
+const admin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Not authorized as an admin' });
+  }
+};
+
+// Chain of Responsibility Pattern: Ownership check middleware
+const checkHolidayOwnership = async (req, res, next) => {
+  try {
+    const Holiday = require('../models/Holiday');
+    const holiday = await Holiday.findById(req.params.id);
+    
+    if (!holiday) {
+      return res.status(404).json({ message: 'Holiday not found' });
+    }
+    
+    // Check if user owns this holiday or is admin
+    if (holiday.userId.toString() === req.user.id || req.user.role === 'admin') {
+      req.holiday = holiday; // Attach the holiday to the request for later use
+      next();
+    } else {
+      res.status(403).json({ message: 'Not authorized to access this holiday' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { protect, admin, checkHolidayOwnership };

@@ -16,6 +16,15 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/holidays', require('./routes/holidayRoutes'));
 
+// Status endpoint for monitoring
+app.get('/status', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Export the app object for testing
 if (require.main === module) {
     connectDB();

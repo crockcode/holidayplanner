@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - holidayfeatures
+      - develop
   pull_request:
     branches:
       - main
       - holidayfeatures
+      - develop
 
 jobs:
   test:

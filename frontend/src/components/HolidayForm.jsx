@@ -4,7 +4,15 @@ import axiosInstance from '../axiosConfig';
 
 const HolidayForm = ({ holidays, setHolidays, editingHoliday, setEditingHoliday }) => {
   const { user } = useAuth();
-  const [formData, setFormData] = useState({ name: '', destination: '', startDate: '', endDate: '', description: '' });
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    destination: '', 
+    startDate: '', 
+    endDate: '', 
+    description: '',
+    expectedWeather: '',
+    budgetLimit: ''
+  });
   const [isFormVisible, setIsFormVisible] = useState(false);
 
   useEffect(() => {
@@ -15,29 +23,54 @@ const HolidayForm = ({ holidays, setHolidays, editingHoliday, setEditingHoliday 
         startDate: editingHoliday.startDate.split('T')[0],
         endDate: editingHoliday.endDate.split('T')[0],
         description: editingHoliday.description,
+        expectedWeather: editingHoliday.expectedWeather || '',
+        budgetLimit: editingHoliday.budgetLimit || ''
       });
       setIsFormVisible(true);
     } else {
-      setFormData({ name: '', destination: '', startDate: '', endDate: '', description: '' });
+      setFormData({ 
+        name: '', 
+        destination: '', 
+        startDate: '', 
+        endDate: '', 
+        description: '',
+        expectedWeather: '',
+        budgetLimit: ''
+      });
     }
   }, [editingHoliday]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Convert budgetLimit to number if it's not empty
+    const processedFormData = {
+      ...formData,
+      budgetLimit: formData.budgetLimit ? Number(formData.budgetLimit) : undefined
+    };
+    
     try {
       if (editingHoliday) {
-        const response = await axiosInstance.put(`/api/holidays/${editingHoliday._id}`, formData, {
+        const response = await axiosInstance.put(`/api/holidays/${editingHoliday._id}`, processedFormData, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setHolidays(holidays.map((holiday) => (holiday._id === response.data._id ? response.data : holiday)));
       } else {
-        const response = await axiosInstance.post('/api/holidays', formData, {
+        const response = await axiosInstance.post('/api/holidays', processedFormData, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setHolidays([...holidays, response.data]);
       }
       setEditingHoliday(null);
-      setFormData({ name: '', destination: '', startDate: '', endDate: '', description: '' });
+      setFormData({ 
+        name: '', 
+        destination: '', 
+        startDate: '', 
+        endDate: '', 
+        description: '',
+        expectedWeather: '',
+        budgetLimit: ''
+      });
       setIsFormVisible(false);
     } catch (error) {
       alert('Failed to save holiday.');
@@ -46,7 +79,15 @@ const HolidayForm = ({ holidays, setHolidays, editingHoliday, setEditingHoliday 
 
   const handleCancel = () => {
     setEditingHoliday(null);
-    setFormData({ name: '', destination: '', startDate: '', endDate: '', description: '' });
+    setFormData({ 
+      name: '', 
+      destination: '', 
+      startDate: '', 
+      endDate: '', 
+      description: '',
+      expectedWeather: '',
+      budgetLimit: ''
+    });
     setIsFormVisible(false);
   };
 
@@ -121,6 +162,33 @@ const HolidayForm = ({ holidays, setHolidays, editingHoliday, setEditingHoliday 
               className="w-full p-2 border rounded"
               required
             />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="expectedWeather" className="block text-sm font-medium mb-1">Expected Weather</label>
+            <input
+              id="expectedWeather"
+              type="text"
+              placeholder="Sunny, Rainy, etc."
+              value={formData.expectedWeather}
+              onChange={(e) => setFormData({ ...formData, expectedWeather: e.target.value })}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="budgetLimit" className="block text-sm font-medium mb-1">Budget Limit ($)</label>
+            <input
+              id="budgetLimit"
+              type="number"
+              placeholder="3000"
+              value={formData.budgetLimit}
+              onChange={(e) => setFormData({ ...formData, budgetLimit: e.target.value })}
+              className="w-full p-2 border rounded"
+            />
+            <small className="text-gray-500">Budgets over $3000 will show an alert</small>
           </div>
         </div>
         

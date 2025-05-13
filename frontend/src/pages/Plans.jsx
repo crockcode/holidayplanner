@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import axiosInstance from '../axiosConfig';
 import HolidayForm from '../components/HolidayForm'; 
 import HolidayList from '../components/HolidayList'; 
 import { useAuth } from '../context/AuthContext';
+import { getHolidays } from '../services/holidayService';
 
 const Holidays = () => {
   const { user } = useAuth();
@@ -10,28 +10,28 @@ const Holidays = () => {
   const [editingHoliday, setEditingHoliday] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortType, setSortType] = useState('');
+
+  // Strategy Pattern: Different sorting strategies based on user selection
+  const fetchHolidays = async (sort = '') => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getHolidays(sort);
+      setHolidays(data);
+    } catch (error) {
+      console.error('Error fetching holidays:', error);
+      setError('Failed to load holidays. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchHolidays = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await axiosInstance.get('/api/holidays', {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-        setHolidays(response.data);
-      } catch (error) {
-        console.error('Error fetching holidays:', error);
-        setError('Failed to load holidays. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     if (user) {
-      fetchHolidays();
+      fetchHolidays(sortType);
     }
-  }, [user]);
+  }, [user, sortType]);
 
   if (isLoading) {
     return (
@@ -75,7 +75,9 @@ const Holidays = () => {
       <HolidayList 
         holidays={holidays} 
         setHolidays={setHolidays} 
-        setEditingHoliday={setEditingHoliday} 
+        setEditingHoliday={setEditingHoliday}
+        sortType={sortType}
+        setSortType={setSortType}
       />
     </div>
   );

@@ -2,7 +2,7 @@ name: CD Pipeline
 
 on:
   workflow_run:
-    workflows: ["CI Pipeline"]
+    workflows: ["CI/CD Pipeline"]
     branches: [main, develop]
     types: 
       - completed
@@ -49,6 +49,11 @@ jobs:
             cd ../frontend
             npm install
             npm run build
+            
+      - name: Health Check
+        run: |
+          echo "Performing health check on staging environment..."
+          curl -sSf http://${{ secrets.STAGING_HOST }}/status || (echo "Health check failed" && exit 1)
             
       - name: Run Integration Tests in Staging
         run: |
@@ -131,6 +136,11 @@ jobs:
         run: |
           echo "Verifying deployment..."
           curl -sSf http://13.236.135.130/ || (echo "Deployment verification failed, rolling back" && exit 1)
+          
+      - name: Health Check
+        run: |
+          echo "Performing health check on production environment..."
+          curl -sSf http://13.236.135.130/status || (echo "Health check failed" && exit 1)
           
       - name: Rollback on Failure
         if: failure()
