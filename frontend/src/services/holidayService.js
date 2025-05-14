@@ -71,7 +71,18 @@ export const subscribeToHoliday = async (id) => {
   }
 };
 
-
+// Clone a holiday (Prototype Pattern)
+export const cloneHoliday = async (id) => {
+  try {
+    const response = await axios.post(/api/holidays/${id}/clone, {}, {
+      headers: getAuthHeader()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error cloning holiday:', error);
+    throw error;
+  }
+};
 // Search flights (Adapter Pattern)
 export const searchFlights = async (destination) => {
   try {
