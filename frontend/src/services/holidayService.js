@@ -58,18 +58,7 @@ export const deleteHoliday = async (id) => {
   }
 };
 
-// Subscribe to a holiday (Observer Pattern)
-export const subscribeToHoliday = async (id) => {
-  try {
-    const response = await axios.post(`/api/holidays/${id}/subscribe`, {}, {
-      headers: getAuthHeader()
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error subscribing to holiday:', error);
-    throw error;
-  }
-};
+
 
 // Clone a holiday (Prototype Pattern)
 export const cloneHoliday = async (id) => {
