@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+ const jwt = require('jsonwebtoken');
 const User = require('../models/User');  // Assuming you have a User model for authentication
 
 // Chain of Responsibility Pattern: Authentication middleware
