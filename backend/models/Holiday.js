@@ -47,9 +47,10 @@ const holidaySchema = new mongoose.Schema(
   { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );
 // Prototype Pattern: Clone method
+// Prototype Pattern: Clone method
 holidaySchema.methods.clone = async function() {
   const clonedHoliday = new Holiday({
-    name: Copy of ${this.name},
+    name: "Copy of " + this.name,
     destination: this.destination,
     startDate: this.startDate,
     endDate: this.endDate,
