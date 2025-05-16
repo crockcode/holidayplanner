@@ -121,7 +121,7 @@ const deleteHoliday = async (req, res) => {
   }
 };
 
-// Subscribe to Holiday (Observer Pattern)
+// Subscribe to Holiday - (Observer Pattern) 
 const subscribeToHoliday = async (req, res) => {
   try {
     const holiday = await Holiday.findById(req.params.id);
