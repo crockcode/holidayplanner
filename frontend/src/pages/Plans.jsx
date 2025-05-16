@@ -4,7 +4,7 @@ import HolidayList from '../components/HolidayList';
 import { useAuth } from '../context/AuthContext';
 
 const Holidays = () => {
-  const { user: currentUser } = useAuth(); // Rename but don't use to avoid linting error
+  useAuth(); // Keep the hook call without destructuring
   const [holidays, setHolidays] = useState([]);
   const [editingHoliday, setEditingHoliday] = useState(null);
   const [sortType, setSortType] = useState('');
