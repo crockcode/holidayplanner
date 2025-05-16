@@ -158,6 +158,72 @@ const cloneHoliday = async (req, res) => {
   }
 };
 
+// Adapter Pattern: Search flights (mocked external API)
+const searchFlights = async (req, res) => {
+  try {
+    const { destination } = req.query;
+    
+    if (!destination) {
+      return res.status(400).json({ message: 'Destination is required' });
+    }
+    
+    // Mock external flight API response
+    const mockExternalFlightData = getMockFlightData(destination);
+    
+    // Adapter: Transform external API data to our API format
+    const adaptedFlights = adaptFlightData(mockExternalFlightData);
+    
+    res.json(adaptedFlights);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Helper function to generate mock flight data
+function getMockFlightData(destination) {
+  // Simulate different flights based on destination
+  const destinations = {
+    'paris': [
+      { flightNumber: 'AF1234', carrier: 'Air France', departure: '2023-12-15T08:00:00Z', price: 450 },
+      { flightNumber: 'BA2345', carrier: 'British Airways', departure: '2023-12-15T10:30:00Z', price: 520 },
+      { flightNumber: 'LH5678', carrier: 'Lufthansa', departure: '2023-12-15T14:15:00Z', price: 480 }
+    ],
+    'new york': [
+      { flightNumber: 'AA7890', carrier: 'American Airlines', departure: '2023-12-15T12:00:00Z', price: 750 },
+      { flightNumber: 'DL4567', carrier: 'Delta', departure: '2023-12-15T15:45:00Z', price: 820 },
+      { flightNumber: 'UA8901', carrier: 'United', departure: '2023-12-15T19:30:00Z', price: 780 }
+    ],
+    'tokyo': [
+      { flightNumber: 'JL1234', carrier: 'Japan Airlines', departure: '2023-12-15T00:30:00Z', price: 1200 },
+      { flightNumber: 'NH5678', carrier: 'ANA', departure: '2023-12-15T02:15:00Z', price: 1150 },
+      { flightNumber: 'SQ9012', carrier: 'Singapore Airlines', departure: '2023-12-15T22:45:00Z', price: 1300 }
+    ]
+  };
+  
+  // Default flights if destination not found
+  const defaultFlights = [
+    { flightNumber: 'GN1111', carrier: 'Generic Air', departure: '2023-12-15T09:00:00Z', price: 500 },
+    { flightNumber: 'GN2222', carrier: 'Generic Air', departure: '2023-12-15T14:00:00Z', price: 550 }
+  ];
+  
+  // Return flights for the destination (case insensitive) or default flights
+  return destinations[destination.toLowerCase()] || defaultFlights;
+}
+
+// Adapter function to transform external flight data to our API format
+function adaptFlightData(externalFlightData) {
+  return {
+    flights: externalFlightData.map(flight => ({
+      id: flight.flightNumber,
+      airline: flight.carrier,
+      departureTime: flight.departure,
+      price: flight.price,
+      currency: 'USD'
+    })),
+    count: externalFlightData.length,
+    status: 'success'
+  };
+}
 
 module.exports = { 
   getHolidays, 
