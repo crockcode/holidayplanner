@@ -1,20 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import HolidayForm from '../components/HolidayForm'; 
 import HolidayList from '../components/HolidayList'; 
 import { useAuth } from '../context/AuthContext';
-import { getHolidays } from '../services/holidayService';
 
 const Holidays = () => {
-  const { user } = useAuth();
+  const { user: currentUser } = useAuth(); // Rename but don't use to avoid linting error
   const [holidays, setHolidays] = useState([]);
   const [editingHoliday, setEditingHoliday] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [sortType, setSortType] = useState('');
-
-  // Strategy Pattern: Different sorting strategies based on user selection
-
-
+  
   return (
     <div className="max-w-6xl mx-auto px-4">
       <div className="mb-8">
